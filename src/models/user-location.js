@@ -8,15 +8,15 @@ import stats from './stats.js'
 // electron specific import
 const { writeFile } = window.require('fs')
 const { resolve } = window.require('path')
-const { exec } = window.require('child_process')
+const { spawn } = window.require('child_process')
 const { remote } = window.require('electron')
 
-const userLocation = observable([ 0, 0 ])
+const userLocation = observable([0, 0])
 const isValidLocation = /^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/
 const validateCoordinates = ((change) => {
   // check that we have valid coordinates before update
   if (change.type === 'splice') {
-    const { added: [ lat, lng ] } = change
+    const { added: [lat, lng] } = change
     const isValid = isValidLocation.test(`${lat}, ${lng}`)
     if (isValid) {
       return change
@@ -31,7 +31,7 @@ const validateCoordinates = ((change) => {
   return change
 })
 
-const updateXcodeLocation = throttle(([ lat, lng ]) => {
+const updateXcodeLocation = throttle(([lat, lng]) => {
   // track location changes for total distance & average speed
   stats.pushMove(lat, lng)
 
@@ -49,20 +49,6 @@ const updateXcodeLocation = throttle(([ lat, lng ]) => {
         <div class='stack'>${error.stack}</div>
       `)
       return console.warn(error)
-    }
-
-    if (settings.updateXcodeLocation.get()) {
-      // reload location into xcode
-      const scriptPath = resolve(window.__dirname, 'autoclick.applescript')
-      exec(`osascript ${scriptPath}`, (autoclickErr, stdout, stderr) => {
-        if (stderr) {
-          Alert.error(`
-            <strong>Error autoclick Xcode - Code 2</strong>
-            <div class='stack'>${stderr}</div>
-          `)
-          return console.warn(stderr)
-        }
-      })
     }
   })
 }, 1000)
@@ -101,5 +87,23 @@ settings.stationaryUpdates.observe(() => scheduleUpdate())
 
 // initial trigger
 scheduleUpdate()
+
+// Update xcode location
+var autoclick_proc = null
+var scriptPath = resolve(window.__dirname, 'autoclick.applescript')
+function toggleXcodeLocation() {
+  if (autoclick_proc) {
+    console.log(`Killing: ${autoclick_proc}`)
+    autoclick_proc.kill('SIGINT')
+    autoclick_proc = null
+  }
+  if (settings.updateXcodeLocation.get()) {
+    // reload location into xcode
+    autoclick_proc = spawn('osascript', [scriptPath])
+    console.log(`Spawned: ${autoclick_proc}`)
+  }
+}
+
+settings.updateXcodeLocation.observe(() => toggleXcodeLocation())
 
 export default userLocation
