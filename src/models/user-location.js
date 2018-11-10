@@ -90,18 +90,19 @@ settings.stationaryUpdates.observe(() => scheduleUpdate())
 scheduleUpdate()
 
 // Update xcode location
-var autoclick_proc = null
-var scriptPath = resolve(window.__dirname, 'autoclick.applescript')
-function toggleXcodeLocation() {
+let autoclick_proc
+const scriptPath = resolve(window.__dirname, 'autoclick.applescript')
+const toggleXcodeLocation = () => {
   if (autoclick_proc) {
-    console.log(`Killing: ${autoclick_proc}`)
     autoclick_proc.kill('SIGINT')
-    autoclick_proc = null
   }
   if (settings.updateXcodeLocation.get()) {
     // reload location into xcode
-    autoclick_proc = spawn('osascript', [scriptPath])
-    console.log(`Spawned: ${autoclick_proc}`)
+    autoclick_proc = spawn('/usr/bin/osascript', [scriptPath])
+    autoclick_proc.on('exit', (code) => {
+      settings.updateXcodeLocation.set(false)
+      autoclick_proc = undefined
+    })
   }
 }
 
