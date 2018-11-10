@@ -62,22 +62,23 @@ const createWindow = () => {
 }
 
 app.on('ready', () => {
-  const tmp = require('tmp')
-  tmp.dir((err, path) => {
-  if (err) throw err
-    global.tmpProjectPath = path
-    createMenu()
-    createWindow()
-    execSync(`cp -R ${resolve(__dirname, 'xcode-project')} ${resolve(path)}`)
-    execSync(
-        `open ${resolve(path, 'xcode-project/pokemon-webspoof.xcodeproj')}`)
+  const path = app.getPath('userData')
+  execSync(`mkdir -p "${path}"`)
+  execSync(`if [[ ! -d "${path}/xcode-project" ]]; then
+              cp -R ${resolve(__dirname, 'xcode-project')} "${path}";
+            fi`)
+  execSync(`open "${path}/xcode-project/pokemon-webspoof.xcodeproj"`)
+  global.projectPath = path
 
-    // quit xcode && remove tmp directory on exit
-    app.on('before-quit', () => {
-      tryCatch(() => execSync('killall Xcode'))
-      tryCatch(() => execSync(`rm -rf ${path}`))
-    })
+  createMenu()
+  createWindow()
+
+  // quit xcode && remove tmp directory on exit
+  app.on('before-quit', () => {
+    tryCatch(() => execSync('killall Xcode'))
+    tryCatch(() => execSync(`rm -rf ${path}`))
   })
+
 })
 
   app.on(
