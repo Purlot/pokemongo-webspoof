@@ -32,7 +32,7 @@ const updateCoord = (val) => {
   coordBox.set(val)
   if (isValidLocation.test(val)) {
     const dist = distBetweenCoords(parseCoord(val), userLocation)
-    buttonText.set(`${dist.toFixed(2)} km`)
+    buttonText.set(`${dist.toFixed(2)}km`)
   } else {
     buttonText.set('Spoof!')
   }
@@ -50,34 +50,28 @@ const handleCoordSubmit = () => action(() => {
 
 const Coordinates = observer(() =>
   <div className='clearfix coordinates'>
-    {['lat', 'lng'].map((direction, idx) =>
-      <div key={idx} className='pull-xs-left'>
-        <div className='input-group'>
-          <span className='input-group-addon' id='basic-addon1'>
-            {direction}
-          </span>
-          <input
-            type='text'
-            className='form-control'
-            placeholder={direction}
-            aria-describedby='basic-addon1'
-            value={userLocation[idx]}
-            onChange={handleChange(idx)} />
-        </div>
-      </div>
-    )}
+    <div className='input-group'>
+      {['lat', 'lng'].map((_, idx) =>
+        <input
+          key={idx}
+          type='text'
+          className='pull-xs-left form-control'
+          placeholder={userLocation[idx]}
+          aria-describedby='basic-addon1'
+          value={userLocation[idx]}
+          onChange={handleChange(idx)} />
+      )}
+    </div>
     <div className='input-group'>
       <input
         type='text'
-        id='coordinate-input'
-        className='form-control'
+        className='spoof-coord-box form-control'
         onChange={handleCoordChange()}
         value={coordBox.get()}
         placeholder={`${userLocation[0]},${userLocation[1]}`} />
       <button
         type='button'
-        id='coordinate-input-button'
-        className='btn btn-sm btn-primary'
+        className='btn btn-primary spoof-button'
         onClick={handleCoordSubmit()}>
         {buttonText.get()}
       </button>

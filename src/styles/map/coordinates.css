@@ -2,15 +2,30 @@
   position: absolute;
   top: 60px;
   left: 10px;
-  width: 350px;
+  width: 330px;
 
   .pull-xs-left {
     margin-right: 2%;
+    margin-bottom: 2%;
     width: 46%;
 
     &:last-child {
       margin-right: 0;
     }
+  }
+
+  .spoof-coord-box {
+    margin-right: 2%;
+    width: 66%;
+  }
+
+  .spoof-button {
+    padding: 0;
+    margin: 0;
+    width: 26%;
+    font-size: 2vw;
+    white-space: nowrap;
+    overflow: hidden;
   }
 
   .form-control {
