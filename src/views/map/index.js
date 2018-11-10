@@ -5,13 +5,12 @@ import GoogleMap from 'google-map-react'
 import { observable, action, toJS } from 'mobx'
 import { observer } from 'mobx-react'
 import Alert from 'react-s-alert'
-
 import userLocation from '../../models/user-location.js'
 import settings from '../../models/settings.js'
 
 import SpeedCounter from './speed-counter.js'
 import BooleanSettings from './boolean-settings.js'
-import { Coordinates, updateCoord } from './coordinates.js'
+import { Coordinates, updateCoord, isValidLocation, parseCoord } from './coordinates.js'
 import SpeedLimit from './speed-limit.js'
 import Controls from './controls.js'
 import TotalDistance from './total-distance.js'
@@ -19,6 +18,11 @@ import Autopilot from './autopilot.js'
 import Pokeball from './pokeball.js'
 
 import MapsApi from '../../config/api.js'
+
+const { readFileSync } = window.require('fs')
+const { remote } = window.require('electron')
+const gpxPath = `${remote.getGlobal('projectPath')}/pokemonLocation.gpx`
+const homeCoord = { coords: { latitude: 37.7701091, longitude: -122.4701495 } }
 
 @observer
 class Map extends Component {
@@ -31,34 +35,20 @@ class Map extends Component {
   }
 
   componentWillMount() {
-    // get user geolocation
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        this.handleGeolocationSuccess,
-        this.handleGeolocationFail,
-        { enableHighAccuracy: true, maximumAge: 0 }
-      )
-    }
-  }
-
-  // geolocation API might be down, use http://ipinfo.io
-  // source: http://stackoverflow.com/a/32338735
-  handleGeolocationFail = async (geolocationErr) => {
-    Alert.warning(`
-      <strong>Error getting your geolocation, using IP location</strong>
-      <div class='stack'>${geolocationErr.message}</div>
-    `, { timeout: 3000 })
-
+    // Always start at 37.7701091,-122.4701495
+    let coord = homeCoord
     try {
-      const { data: { loc } } = await axios({ url: 'http://ipinfo.io/' })
-      const [latitude, longitude] = loc.split(',').map(coord => parseFloat(coord))
-      this.handleGeolocationSuccess({ coords: { latitude, longitude } })
-    } catch (xhrErr) {
-      Alert.error(`
-        <strong>Could not use IP location</strong>
-        <div>Try to restart app, report issue to github</div>
-        <div class='stack'>${xhrErr}</div>
-      `)
+      const coordStr = readFileSync(gpxPath, 'utf-8')
+                         .match(/<wpt lat="(.*)" lon="(.*)">/)
+                         .slice(1, 3).join(',')
+      if (isValidLocation.test(coordStr)) {
+        const [latitude, longitude] = parseCoord(coordStr)
+        coord = { coords: { latitude, longitude } }
+      }
+    } catch(e) {
+        Alert.error(error.message)
+    } finally {
+      this.handleGeolocationSuccess(coord)
     }
   }
 

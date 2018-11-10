@@ -79,4 +79,4 @@ const Coordinates = observer(() =>
   </div>
 )
 
-export default { Coordinates, updateCoord }
+export default { Coordinates, updateCoord, isValidLocation, parseCoord }
