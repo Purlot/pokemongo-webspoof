@@ -6,7 +6,7 @@ import settings from './settings.js'
 import stats from './stats.js'
 
 // electron specific import
-const { writeFile } = window.require('fs')
+const { writeFileSync } = window.require('fs')
 const { resolve } = window.require('path')
 const { spawn } = window.require('child_process')
 const { remote } = window.require('electron')
@@ -42,16 +42,16 @@ const updateXcodeLocation = throttle(([lat, lng]) => {
     `<gpx creator="Xcode" version="1.1"><wpt lat="${(lat + jitter).toFixed(6)}" lon="${(lng + jitter).toFixed(6)}"><name>PokemonLocation</name></wpt></gpx>`
 
   // write `pokemonLocation.gpx` file fro xcode spoof location
-  writeFile(gpxPath, xcodeLocationData, async (error) => {
-    if (error) {
-      Alert.error(`
-        <strong>Error writting 'pokemonLocation.gpx' to file</strong>
-        <div class='stack'>${error.message}</div>
-        <div class='stack'>${error.stack}</div>
-      `)
-      return console.warn(error)
-    }
-  })
+  try {
+    writeFileSync(gpxPath, xcodeLocationData)
+  } catch(err) {
+    Alert.error(`
+      <strong>Error writting 'pokemonLocation.gpx' to file</strong>
+      <div class='stack'>${err.message}</div>
+      <div class='stack'>${err.stack}</div>
+    `)
+    return console.warn(err)
+  }
 }, 1000)
 
 userLocation.intercept(validateCoordinates)
