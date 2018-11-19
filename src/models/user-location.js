@@ -6,12 +6,13 @@ import settings from './settings.js'
 import stats from './stats.js'
 
 // electron specific import
-const { writeFileSync } = window.require('fs')
+const { writeFileSync, readFileSync } = window.require('fs')
 const { resolve } = window.require('path')
 const { execSync } = window.require('child_process')
 const { remote } = window.require('electron')
 
 const userLocation = observable([0, 0])
+
 const isValidLocation = /^([-+]?\d{1,2}([.]\d+)?),\s*([-+]?\d{1,3}([.]\d+)?)$/
 const validateCoordinates = ((change) => {
   // check that we have valid coordinates before update
@@ -34,18 +35,20 @@ const validateCoordinates = ((change) => {
 const projectPath = remote.getGlobal('projectPath')
 const gpxPath = `${projectPath}/pokemonLocation.gpx`
 const scriptPath = resolve(window.__dirname, 'autoclick.applescript')
+const isValidGpx = /<gpx><wpt lat="[-+]?[0-9]*\.?[0-9]+" lon="[-+]?[0-9]*\.?[0-9]+"><\/wpt><\/gpx>/
 const updateXcodeLocation = throttle(([lat, lng]) => {
   // track location changes for total distance & average speed
   stats.pushMove(lat, lng)
 
   const jitter = settings.addJitterToMoves.get() ? random(-0.000009, 0.000009, true) : 0
   const xcodeLocationData =
-    `<gpx creator="Xcode" version="1.1"><wpt lat="${(lat + jitter).toFixed(6)}" lon="${(lng + jitter).toFixed(6)}"><name>PokemonLocation</name></wpt></gpx>`
+    `<gpx><wpt lat="${(lat + jitter).toFixed(6)}" lon="${(lng + jitter).toFixed(6)}"></wpt></gpx>`
 
   // write `pokemonLocation.gpx` file fro xcode spoof location
   try {
     writeFileSync(gpxPath, xcodeLocationData)
-    if (settings.updateXcodeLocation.get()) {
+    if (settings.updateXcodeLocation.get() &&
+        isValidGpx.test(readFileSync(gpxPath, 'utf-8'))) {
       execSync(`/usr/bin/osascript ${scriptPath}`)
     }
   } catch(err) {
@@ -56,7 +59,7 @@ const updateXcodeLocation = throttle(([lat, lng]) => {
     `)
     return console.warn(err)
   }
-}, 1000)
+}, 1200)
 
 userLocation.intercept(validateCoordinates)
 
