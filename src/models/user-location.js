@@ -8,7 +8,7 @@ import stats from './stats.js'
 // electron specific import
 const { writeFileSync } = window.require('fs')
 const { resolve } = window.require('path')
-const { spawn } = window.require('child_process')
+const { execSync } = window.require('child_process')
 const { remote } = window.require('electron')
 
 const userLocation = observable([0, 0])
@@ -33,6 +33,7 @@ const validateCoordinates = ((change) => {
 
 const projectPath = remote.getGlobal('projectPath')
 const gpxPath = `${projectPath}/pokemonLocation.gpx`
+const scriptPath = resolve(window.__dirname, 'autoclick.applescript')
 const updateXcodeLocation = throttle(([lat, lng]) => {
   // track location changes for total distance & average speed
   stats.pushMove(lat, lng)
@@ -44,6 +45,9 @@ const updateXcodeLocation = throttle(([lat, lng]) => {
   // write `pokemonLocation.gpx` file fro xcode spoof location
   try {
     writeFileSync(gpxPath, xcodeLocationData)
+    if (settings.updateXcodeLocation.get()) {
+      execSync(`/usr/bin/osascript ${scriptPath}`)
+    }
   } catch(err) {
     Alert.error(`
       <strong>Error writting 'pokemonLocation.gpx' to file</strong>
@@ -88,24 +92,5 @@ settings.stationaryUpdates.observe(() => scheduleUpdate())
 
 // initial trigger
 scheduleUpdate()
-
-// Update xcode location
-let autoclick_proc
-const scriptPath = resolve(window.__dirname, 'autoclick.applescript')
-const toggleXcodeLocation = () => {
-  if (autoclick_proc) {
-    autoclick_proc.kill('SIGINT')
-  }
-  if (settings.updateXcodeLocation.get()) {
-    // reload location into xcode
-    autoclick_proc = spawn('/usr/bin/osascript', [scriptPath])
-    autoclick_proc.on('exit', (code) => {
-      settings.updateXcodeLocation.set(false)
-      autoclick_proc = undefined
-    })
-  }
-}
-
-settings.updateXcodeLocation.observe(() => toggleXcodeLocation())
 
 export default userLocation
